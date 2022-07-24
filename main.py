@@ -4,16 +4,49 @@ engine = create_engine(
     echo=True
 )
 
-from sqlalchemy import text
+from sqlalchemy.orm import declarative_base
 
-with engine.connect() as conn:
-    result = conn.execute(text("select 'hello world'"))
-    print(result.all())
+Base = declarative_base()
 
-with engine.connect() as conn:
-    conn.execute(text("CREATE TABLE some_table (x int, y int)"))
-    conn.execute(
-        text("INSERT INTO some_table (x, y) VALUES (:x, :y)"),
-        [{"x": 1, "y": 1}, {"x": 2, "y": 4}]
-    )
-    conn.commit()
+from sqlalchemy import Column, Integer, String
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    fullname = Column(String)
+    nickname = Column(String)
+    def __repr__(self):
+       return "<User(name='%s', fullname='%s', nickname='%s')>" % (
+                            self.name, self.fullname, self.nickname)
+       
+print (User.__table__ )
+
+# Base.metadata.create_all(engine)
+
+# ed_user = User(name='ed', fullname='Ed Jones', nickname='edsnickname')
+# print(ed_user.name)
+# print(ed_user.nickname)
+# print(str(ed_user.id))
+
+from sqlalchemy.orm import sessionmaker
+Session = sessionmaker(bind=engine)
+session = Session()
+ed_user = User(name='ed', fullname='Ed Jones', nickname='edsnickname')
+session.add(ed_user)
+
+our_user = session.query(User).filter_by(name='ed').first() 
+
+# print(our_user)
+# print(ed_user is our_user)
+
+session.add_all([
+    User(name='wendy', fullname='Wendy Williams', nickname='windy'),
+    User(name='mary', fullname='Mary Contrary', nickname='mary'),
+    User(name='fred', fullname='Fred Flintstone', nickname='freddy')])
+
+ed_user.nickname = 'eddie'
+# print(session.dirty)
+# print(session.new)
+session.commit()
+
+
